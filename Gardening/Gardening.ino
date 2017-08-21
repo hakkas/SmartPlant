@@ -164,6 +164,7 @@ void setup()
     /* Init Relay      */
     pinMode(RelayPin,OUTPUT);
     /* The First time power on to write the default data to EEPROM */
+    
     if (EEPROM.read(EEPROMAddress) == 0xff) {
         EEPROM.write(EEPROMAddress,0x00);
         EEPROM.write(++EEPROMAddress,SystemLimens.UVIndex_Limen);
@@ -172,9 +173,9 @@ void setup()
         EEPROM.write(++EEPROMAddress,SystemLimens.DHTTemperature_Hi);
         EEPROM.write(++EEPROMAddress,SystemLimens.DHTTemperature_Low);
         EEPROM.write(++EEPROMAddress,SystemLimens.MoisHumidity_Limen);
-        EEPROM.write(++EEPROMAddress,((int)(SystemLimens.WaterVolume*100))/255);    /*  */
+        EEPROM.write(++EEPROMAddress,((int)(SystemLimens.WaterVolume*100))/255);    
         EEPROM.write(++EEPROMAddress,((int)(SystemLimens.WaterVolume*100))%255);
-    } else { /* If It's the first time power on , read the last time data */
+    } else { // If It's the first time power on , read the last time data 
         EEPROMAddress++;
         SystemLimens.UVIndex_Limen      = EEPROM.read(EEPROMAddress++);
         SystemLimens.DHTHumidity_Hi     = EEPROM.read(EEPROMAddress++);
@@ -184,6 +185,14 @@ void setup()
         SystemLimens.MoisHumidity_Limen = EEPROM.read(EEPROMAddress++);
         SystemLimens.WaterVolume =   (EEPROM.read(EEPROMAddress++)*255 + EEPROM.read(EEPROMAddress))/100.0;
     }
+
+    SystemLimens.UVIndex_Limen      = 9;
+    SystemLimens.DHTHumidity_Hi     = 60;
+    SystemLimens.DHTHumidity_Low    = 40;
+    SystemLimens.DHTTemperature_Hi  = 30;
+    SystemLimens.DHTTemperature_Low = 15;
+    SystemLimens.MoisHumidity_Limen = 40;
+    SystemLimens.WaterVolume = 0.2;
     
     StartTime = millis();
     WorkingStatus = Standby;
@@ -195,19 +204,33 @@ void loop()
 {
     // Reading temperature or humidity takes about 250 milliseconds!
     // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+    Serial.print("Status is:");
+    Serial.println(WorkingStatus);
     switch (WorkingStatus) {
+      
     case Standby:
         if (millis() - StartTime > DataUpdateInterval) {
             StartTime      = millis();
             DHTHumidity    = dht.readHumidity();
             DHTTemperature = dht.readTemperature();
             MoisHumidity   = analogRead(MoisturePin)/7;
+
+            Serial.print("Mois is:");
+            Serial.println(MoisHumidity);
+
+            Serial.print("Temp is:");
+            Serial.println(DHTTemperature);
+
+            Serial.print("Grens MOIS is:");
+            Serial.println(SystemLimens.MoisHumidity_Limen);
+
+            
             UVIndex        = (float)SI1145.ReadUV()/100 + 0.5;
             if (MoisHumidity >100) {
                 MoisHumidity = 100;
             }
             if (MoisHumidity < SystemLimens.MoisHumidity_Limen) {
-                SwitchtoWateringFlag = 1;
+                SwitchtoWateringFlag = 1; //hier
             }  
             if (DHTHumidity < SystemLimens.DHTHumidity_Low || DHTHumidity > SystemLimens.DHTHumidity_Hi) {  /* DHTHumidity anomaly */
                 SystemWarning = AirHumidityWarning;
@@ -309,9 +332,15 @@ void loop()
         SeeedOled.putString("Warning!");
         switch (SystemWarning) {
         case AirHumidityWarning:
+            Serial.print ("Hum is: ");
+            Serial.println(DHTHumidity);
+            Serial.print("Grens is: ");
+            Serial.println(SystemLimens.DHTHumidity_Low);
             if (DHTHumidity < SystemLimens.DHTHumidity_Low ) {
                 SeeedOled.setTextXY(5,2);
                 SeeedOled.putString("Humidity  Low");
+                Serial.print ("Hum is: ");
+                Serial.println(DHTHumidity);
             } else {
                 SeeedOled.setTextXY(5,2);
                 SeeedOled.putString("Humidity High");
@@ -698,10 +727,10 @@ void DisplayMoisture()
         UpdateDataFlag  = 1;
         switch(EncoderRoateDir) {
         case Clockwise:
-            SystemLimens.MoisHumidity_Limen++;
+            //SystemLimens.MoisHumidity_Limen++;
             break;
         case Anticlockwise:
-            SystemLimens.MoisHumidity_Limen--;
+            //SystemLimens.MoisHumidity_Limen--;
             break;
         default:
             break;
