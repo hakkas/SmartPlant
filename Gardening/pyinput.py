@@ -11,7 +11,7 @@ from auth import (
     access_token_secret
 )
 
-ser = serial.Serial('/dev/ttyACM0', 9600, 8, 'N', 1, timeout=5)
+ser = serial.Serial('/dev/ttyACM0', 9600, 8, 'N', 1, timeout=10)
 
 twitter = Twython(
     consumer_key,
@@ -21,14 +21,20 @@ twitter = Twython(
 )
 
 # message = "Hello world!"
+time.sleep(3)
 
 while True:
-    tijd = time.time()
-    line = ser.readline().decode('UTF-8')
-    line = line.rstrip() 
-    if line != "": 
-        print (line)
-    if line != "" and not ("fail" in line):
-        line += " Timestamp: " + str(tijd)
-        twitter.update_status(status=line)
-        print("Tweeted: %s" % line)
+    try:
+        # tijd = time.time()
+        line = ser.readline().decode('UTF-8')
+        line = line.rstrip() 
+        if line != "": 
+            print (line)
+        if line != "" and not ("fail" in line):
+            # line += " Timestamp: " + str(tijd)
+            twitter.update_status(status=line)
+            time.sleep(60)
+            print("Tweeted: %s" % line)
+    except Exception as e:
+        print ("Exception: " + str(e))
+        pass

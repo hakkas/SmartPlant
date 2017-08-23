@@ -64,7 +64,7 @@ WorkingLimens SystemLimens;
 #define DataUpdateInterval 10000  // 20S
 #define RelayOn         HIGH
 #define RelayOff        LOW
-#define PRINTINTERVAL	3600000 // is 1 hour
+#define PRINTINTERVAL   600000	// 3600000 // is 1 hour
 
 #define NoWaterTimeOut  3        // 10s
 
@@ -542,6 +542,11 @@ void setup()
 	PrintTime = millis();
 	WorkingStatus = Standby;
 	SystemWarning = NoWarning;
+    DHTHumidity    = dht.readHumidity();
+    DHTTemperature = dht.readTemperature();
+    MoisHumidity   = analogRead(MoisturePin)/7;
+    UVIndex        = (float)SI1145.ReadUV()/100 + 0.5;
+    PrintValues("Startup. ");
 }
 
 
@@ -552,7 +557,7 @@ void loop()
 	// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
 	if (millis() - PrintTime > PRINTINTERVAL) {
 		PrintTime = millis();
-		PrintValues("Hourly update.");
+		PrintValues("15 minutes update.");
 	}
 	switch (WorkingStatus) {
 
@@ -562,9 +567,6 @@ void loop()
 				DHTHumidity    = dht.readHumidity();
 				DHTTemperature = dht.readTemperature();
 				MoisHumidity   = analogRead(MoisturePin)/7;
-
-
-
 				UVIndex        = (float)SI1145.ReadUV()/100 + 0.5;
 				if (MoisHumidity >100) {
 					MoisHumidity = 100;
