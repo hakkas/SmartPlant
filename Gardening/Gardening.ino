@@ -1,10 +1,19 @@
 #include <Wire.h>
 #include <SeeedOLED.h>
 #include <EEPROM.h>
+#include <SPI.h>
+#include <Ethernet.h> // ethernet
+#include <PubSubClient.h> // mqtt
 #include "DHT.h"
 #include <TimerOne.h>
 #include "Arduino.h"
 #include "SI114X.h"
+
+byte mac[] = {
+  0x90, 0xA2, 0xDA, 0x0E, 0xA1, 0xC3 // 192.168.178.66
+};
+IPAddress ip(192, 168, 178, 66); // 192.168.178.46 Arduino met SmartPlant
+IPAddress server(192, 168, 178, 131); // tweede raspbi
 
 enum Status 
 {
@@ -95,17 +104,59 @@ float MoisHumidity   = 100;
 float UVIndex        = 0;
 char buffer[30];
 
+// Callback function header
+void callback(char* topic, byte* payload, unsigned int length);
+
+EthernetClient ethClient;
+PubSubClient client(server, 1883, callback, ethClient);
+
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i=0;i<length;i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+}
+
+void reconnect() {
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    // Attempt to connect
+    if (client.connect("arduinoClient")) {
+      Serial.println("connected");
+      // Once connected, publish an announcement...
+      client.publish("testtopic","hello world from Arduino");
+
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
+}
+
 void PrintValues (String message) {
-	Serial.print(message);
-	Serial.print("Moisture: ");
-	Serial.print(MoisHumidity);
-	Serial.print(" Humidity: ");
-	Serial.print(DHTHumidity);
-	Serial.print(" Temp: ");
-	Serial.print(DHTTemperature);
-	Serial.print(" UVIndex: ");
-	Serial.print(UVIndex); 
-	Serial.println(". ");
+  String msg = "";
+  char cmsg[100];
+	msg += message;
+	msg += ("Moisture: ");
+	msg += (MoisHumidity);
+	msg += (" Humidity: ");
+	msg += (DHTHumidity);
+	msg += (" Temp: ");
+	msg += (DHTTemperature);
+	msg += (" UVIndex: ");
+	msg += (UVIndex); 
+	msg += (". ");
+  msg.toCharArray(cmsg, msg.length());
+  client.publish("SmartPlantUpdate", cmsg);
+
 }
 
 void ButtonClick()
@@ -119,13 +170,15 @@ void ButtonClick()
 }
 
 void WaterPumpOn()
-{
+{ /*
 	digitalWrite(RelayPin,RelayOn);
+ */
 }
 
 void WaterPumpOff()
-{
+{ /*
 	digitalWrite(RelayPin,RelayOff);
+  */
 }
 
 
@@ -487,7 +540,16 @@ void setup()
 	/* Init DHT11 */
 	Serial.begin(9600); 
 	dht.begin();
+  Ethernet.begin(mac, ip);
 
+  /* init ethernet en mqtt */
+  if (client.connect("arduinoClient")) {
+
+    client.subscribe("MoistureUpdate", 0);
+  }
+  // Allow the hardware to sort itself out
+  delay(1500);
+  
 	/* Init Button */
 	pinMode(ButtonPin,INPUT);
 	attachInterrupt(0,ButtonClick,FALLING);
@@ -552,7 +614,9 @@ void setup()
 
 void loop() 
 {
-	
+	if (!client.connected()) {
+    reconnect();
+  }
 	// Reading temperature or humidity takes about 250 milliseconds!
 	// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
 	if (millis() - PrintTime > PRINTINTERVAL) {
@@ -816,5 +880,6 @@ void loop()
 		default:
 			break;
 	}
+ client.loop();
 }
 
