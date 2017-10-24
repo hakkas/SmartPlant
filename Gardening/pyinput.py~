@@ -11,7 +11,7 @@ from auth import (
     access_token_secret
 )
 
-ser = serial.Serial('/dev/ttyACM0', 9600, 8, 'N', 1, timeout=5)
+ser = serial.Serial('/dev/ttyACM0', 9600, 8, 'N', 1, timeout=10)
 
 twitter = Twython(
     consumer_key,

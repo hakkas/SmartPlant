@@ -60,11 +60,11 @@ WorkingLimens SystemLimens;
 #define WaterflowPin    5
 #define RelayPin        6
 
-#define OneSecond       1000
+#define OneSecond       3000
 #define DataUpdateInterval 10000  // 20S
 #define RelayOn         HIGH
 #define RelayOff        LOW
-#define PRINTINTERVAL   600000	// 3600000 // is 1 hour
+#define PRINTINTERVAL   1800000	// 3600000 // is 1 hour
 
 #define NoWaterTimeOut  3        // 10s
 
@@ -442,7 +442,7 @@ void StandbytoWatering()
 	WorkingStatus = Watering;
 	WaterPumpOn();
 
-	PrintValues("Water is on.");
+	PrintValues("@hakan_akkas: Water is on.");
 
 	SeeedOled.setTextXY(0,3);
 	SeeedOled.putString("Watering");
@@ -557,7 +557,7 @@ void loop()
 	// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
 	if (millis() - PrintTime > PRINTINTERVAL) {
 		PrintTime = millis();
-		PrintValues("15 minutes update.");
+		PrintValues("Half hour update. ");
 	}
 	switch (WorkingStatus) {
 
